@@ -1,0 +1,500 @@
+﻿/**
+ * 
+ * @desc : payco 구매하기 button plugin 
+ */
+if (!window.Payco) {
+	var Payco = {}
+}
+
+
+Payco.Button = (function() {
+
+	var _Option = {
+		sellerKey			: '',
+		orderMethod 		: 'CHECKOUT',
+		buttonClass			: 'A',
+		buttonType 			: 'A1',
+		buttonKey			: 'CHECKOUT_A1',
+		buttonElementId		: '',		
+		isDisplayEventMsg	: true,
+		staticDomain 		: 'https://static-bill.nhnent.com',
+		apiDomain			: 'https://api-bill.payco.com',
+		imgPath 			: '',
+		buttonCssUrl		: '',
+		msgJsonpUrl			: ""
+	};
+	
+	/**
+	 * parameter check && default param setting
+	 */
+	var _Initialize = function( params ) {
+
+		_Utility.checkReplaceTestDomain();
+		
+		
+		//== param check
+		_Option.sellerKey 			=  params['SELLER_KEY'] || "";
+		_Option.orderMethod 		=  params['ORDER_METHOD'] || 'CHECKOUT';
+		_Option.buttonType 			=  params['BUTTON_TYPE'] || 'A1'; 
+		_Option.buttonElementId		=  params['DISPLAY_ELEMENT_ID'] || '';
+		_Option.isDisplayEventMsg	=  ( params['DISPLAY_PROMOTION'] && params['DISPLAY_PROMOTION'] == 'N' ) ? false : true;
+		_Option.isDisplayEventMsg	=  _Option.sellerKey ? _Option.isDisplayEventMsg : false;
+
+		_Option.imgPath 			= 'https://paycoscdn.toastoven.net/payco/bill/checkout/img',
+		_Option.buttonCssUrl		= _Option.staticDomain + "/payco/checkout/css/payco_buttons_pc.css?v=2_3",
+		_Option.buttonKey 			= _Option.orderMethod + '_' + _Option.buttonType;
+		
+		if ( params['DISPLAY_ELEMENT_ID'] == undefined ) {
+			document.write("<span id='paycoButtonId'></span>"); 
+			_Option.buttonElementId = 'paycoButtonId';
+		}
+ 		
+		var pattn_button_type 	=  /(^[A-C])\d+$/g;
+		var match_result 		= pattn_button_type.exec(_Option.buttonType);
+		if ( match_result != null  ) {
+			_Option.buttonClass	 	= match_result[1];
+		}
+	};
+	
+	/**
+	 * 
+	 * 버튼 종류 별 setting option check && setting
+	 * 체크 아웃 타입은 API를 통해 promotion msg 만 셋팅 , 간편 결제의 경우는 버튼 이미지, msg, banner img 모두 셋팅
+	 * returnParam은 sample 페이지에서 여러개의 버튼 노출 시 mulit request의 response 용도로 사용.
+	 */
+	var _SetOption = {
+			
+		/**
+		 * 간편결제 버튼
+		 */
+		easyPayButton : function( params ) {
+			params['PROMOTION_ELEMENT_ID'] =  params['PROMOTION_ELEMENT_ID'] || '';
+			params['BANNER_ELEMENT_ID '] =  params['BANNER_ELEMENT_ID '] || '';
+			
+			_Option.eventMsgElement		=  params['PROMOTION_ELEMENT_ID'] ? document.getElementById(params['PROMOTION_ELEMENT_ID']) : undefined;
+			_Option.bannerAreaElement	=  params['BANNER_ELEMENT_ID'] ? document.getElementById(params['BANNER_ELEMENT_ID']) : undefined;
+			
+			if ( _Option.eventMsgElement == undefined ) {
+				_Option.isDisplayEventMsg = false;
+			}
+			
+			_Option.msgJsonpUrl = _Option.apiDomain + '/outseller/merchantMessage/pay/N/' + _Option.sellerKey;
+			_Option.msgJsonpUrl += '?callback=Payco.Button.displayEasyPay&returnParam=' + _Option.buttonKey + '|' + _Option.buttonElementId + '|' + params['PROMOTION_ELEMENT_ID']; // for sample multi test
+
+		},
+		
+		/**
+		 * 체크아웃버튼
+		 */
+		checkoutButton : function() {
+			_Option.msgJsonpUrl = _Option.apiDomain + '/outseller/merchantMessage/purchase/N/' + _Option.sellerKey + '?callback=Payco.Button.displayPromotionCheckout&returnParam=' + _Option.buttonKey;
+		}
+
+	};
+	
+	
+	/**
+	 * utility func
+	 */
+	var _Utility = {
+		 search_host : function() {
+			try {
+				var objScript = document.getElementsByTagName("script");		
+				if ( objScript == null ) {
+					return null;
+				}
+			
+				var host = new RegExp('(^https?:\/\/[^\/]*static-bill\.(payco|nhnent)\.com)\/[^?]*\/(payco|payco_mobile).js');
+				for ( var i in objScript ) {
+					if ( typeof objScript[i].src == "undefined" ) continue;
+					
+					var result = host.exec(objScript[i].src);	
+					if ( result != null) {
+						return result[1];
+					}
+				}
+			} catch(e) {}
+			
+			return null;
+		},
+		
+		/**
+		 * sample test
+		 */
+		checkReplaceTestDomain : function() {
+			//=== alpha , local test
+			var staticDomain = _Utility.search_host();
+			
+			if ( staticDomain == null ) {
+				staticDomain = document.location.href.match(/(http[s]*:\/\/[a-zA-Z0-9\-\.]*)/)[1];
+			}
+			
+			var isTest = ( staticDomain != null && (staticDomain.indexOf('alpha-', '') > 0 || staticDomain.indexOf('local-', '') > 0 )) ? true : false;
+			if ( isTest ) {
+				_Option.staticDomain = staticDomain;
+				_Option.apiDomain = (staticDomain.indexOf("alpha-") > 0 && _Option.apiDomain.indexOf("alpha-") < 0) ? _Option.apiDomain.replace("https://", "https://alpha-") : _Option.apiDomain;
+			//	_Option.apiDomain = (staticDomain.indexOf("local-") > 0 && _Option.apiDomain.indexOf("local-") < 0) ? _Option.apiDomain.replace("https://", "https://local-") : _Option.apiDomain;
+				_Option.apiDomain = (staticDomain.indexOf("local-") > 0 && _Option.apiDomain.indexOf("alpha-") < 0) ? _Option.apiDomain.replace("https://", "https://alpha-") : _Option.apiDomain;
+			}
+
+		},
+		
+		loadCss : function ( cssUrl ) {
+			var objCss = document.createElement('link');
+			objCss.type	 	= 'text/css';
+			objCss.rel 		= 'stylesheet';
+			objCss.href 	= cssUrl;
+			//objCss.href = 'button.css?' + Math.round(+new Date() / 3600000);
+
+			document.getElementsByTagName('head')[0].appendChild(objCss);
+		},
+
+		loadScript: function(url, callback, params) {
+			var src = url;
+			var script = document.createElement('script');
+			script.type = "text/javascript";
+			script.charset = "utf-8";
+			
+			if ( callback != undefined ) {
+			    var loaded = false;
+			    script.onreadystatechange= function () {
+			        if (this.readyState == 'loaded' || this.readyState == 'complete') {
+			            if (loaded) {
+			                return;
+			            }
+			            loaded = true;
+			            callback(params);
+			        }
+			    }
+			    script.onload = function () {
+			        callback(params);
+			    }
+			}
+			
+			script.src	= src;
+			var ret = document.getElementsByTagName('head')[0].appendChild(script);
+			return ret;
+		}
+	};
+	
+
+
+	
+	/**
+	 * button & event text ui 
+	 */
+	var _UI = {
+		
+		/**
+		 * 혜택 문구 api 호출
+		 * 간편 결제의 경우는 버튼 이미지도 jsonp의 응답으로 처리하므로 무조건 호출은 한번 해야 함. 
+		 * 간편 구매의 경우는 display옵션이 N이면 api 호출이 필요없음.
+		 */
+		loadPromotionJsonp : function() {
+			if ( _Option.orderMethod == 'CHECKOUT' && _Option.isDisplayEventMsg != true)  {
+				return;
+			}
+
+			_Utility.loadScript(_Option.msgJsonpUrl);
+		},
+
+		
+		/**
+		 * 간편 결제 버튼 && 혜택 문구 display 
+		 */
+		displayEasyPay : function(json) {
+			var errCode = json.code;
+			if ( json.code != 0 || json.result == undefined || json.result.payMsg == undefined) {
+				_UI.displayButtonEasyPay();
+				return;
+			}
+
+			if ( json.result.returnParam != undefined ) {
+				var returnParam = json.result.returnParam.split('|');
+				_Option.buttonKey = returnParam[0] ? returnParam[0] : _Option.buttonKey;
+				_Option.buttonElementId = returnParam[1] ? returnParam[1] : _Option.buttonElementId;
+				_Option.eventMsgElement = returnParam[2] ? document.getElementById(returnParam[2]) : undefined;
+				
+			}
+			
+			var payMsg = json.result.payMsg;
+
+			// 간편결제 버튼 이미지 출력
+			_UI.displayButtonEasyPay(payMsg.title);
+
+			// 간편 결제 이벤트 문구 출력
+			if ( payMsg.text && _Option.isDisplayEventMsg && _Option.eventMsgElement != undefined) {
+				_Option.eventMsgElement.innerHTML = payMsg.text;
+			} 
+			
+			// 배너 영역 출력
+			if ( payMsg.banner_text &&  _Option.bannerAreaElement != undefined) {
+				_Option.bannerAreaElement.innerHTML = payMsg.banner_text;
+			} 
+		},
+
+
+		/**
+		 * 구매하기 버튼 하단 이벤트 문구 처리 
+		 */
+		displayPromotionCheckout : function( json ) {
+		
+			/**
+			 * html 
+			 */
+			var displayPromotionHTML = function( sellerEventMsg, rollFunc ) {
+				var eventMsgHtml = '<a href="javascript:;" id="pco_ev_link_'+button_id+'" class="payco_section_ft">';
+				eventMsgHtml += '<span class="payco_txt"><em class="payco_color">'+sellerEventMsg['titlePrefix']+'</em>';
+				eventMsgHtml += '<span class="payco_color2"> '+sellerEventMsg['title']+'</span></span></a>';
+				
+				eventMsgHtml += '<span class="payco_tooltip" id="payco_tooltip_'+button_id+'">';
+				eventMsgHtml += '<span class="payco_ico_arr"><img src="'+_Option.imgPath+'/v2/ico_arr_bx.gif" alt=""></span>';
+				eventMsgHtml += '<strong class="payco_txt_tip">'+sellerEventMsg['tooltip']+'</strong>';
+				eventMsgHtml += '</span>';
+				
+				var eleEvent = document.getElementById("div_pco_evnt_"+button_id);
+				if ( eleEvent ) {
+					eleEvent.innerHTML = eventMsgHtml;
+					_EventHandler.addPromotionEvent( sellerEventMsg['link'], sellerEventMsg['linkWindowOpenSpecs'], button_id , rollFunc );
+				}
+			};
+			
+			
+			var replaceNextItem = function( sellerEventMsg, rollFunc ) {
+				var eleEventLink = document.getElementById("pco_ev_link_"+button_id);
+				var eleTooltip = document.getElementById("payco_tooltip_"+button_id);
+				
+				/*
+				var eleTitleArea = eleEventLink.childNodes[0].childNodes;
+				eleTitleArea[0].innerHTML = sellerEventMsg['titlePrefix'];
+				eleTitleArea[1].innerHTML = ' ' + sellerEventMsg['title'];
+				eleTooltip.childNodes[1].innerHTML = sellerEventMsg['tooltip'];
+				*/				
+				
+				eleEventLink.getElementsByTagName('span')[1].innerHTML = ' ' + sellerEventMsg['title'];
+				eleEventLink.getElementsByTagName('em')[0].innerHTML = sellerEventMsg['titlePrefix'];
+				eleTooltip.getElementsByTagName('strong')[0].innerHTML = sellerEventMsg['tooltip'];
+				
+				_EventHandler.addPromotionEvent( sellerEventMsg['link'], sellerEventMsg['linkWindowOpenSpecs'], button_id, rollFunc);
+			};
+			
+
+			/**
+			 * 롤링 처리 function
+			 */
+			var RollingDiv = function() {
+				var This = this;
+				var intervalId = null;
+				var currIdx = 0;
+				var interval = 4000;
+
+
+				this.initialize = function() {
+					_EventHandler.addClickEventHandler(document.getElementById("prev_btn_"+button_id), This.prev);
+					_EventHandler.addClickEventHandler(document.getElementById("next_btn_"+button_id), This.next);
+					document.getElementById("preNextBtn_"+button_id).className = "payco_btn_wrap on";
+					
+					displayPromotionHTML(rPromotionData[currIdx], This);
+				};
+				
+				this.next = function() {
+					currIdx++;
+					if ( currIdx >= rPromotionData.length) {
+						currIdx = 0;
+					}
+					replaceNextItem(rPromotionData[currIdx], This);
+				};
+
+			
+				this.prev = function() {
+					currIdx--;
+					
+					if ( currIdx < 0 ) {
+						currIdx = rPromotionData.length - 1;
+					}
+					
+					replaceNextItem(rPromotionData[currIdx], This);
+				};
+				
+				this.start = function() {
+					//this.next();
+					intervalId = setInterval(function() { This.next(); }, interval);
+				},
+				
+				this.stop = function() {
+					if ( intervalId ) clearInterval(intervalId); 
+				}
+			};
+			
+			
+			//console.log(json.result);
+			
+			var errCode = json.code;
+			if ( json.code != 0 || json.result == undefined || ( json.result.purchaseMsg == undefined && json.result.purchaseMsgList == undefined) ) {
+				return;
+			}
+
+			if ( json.result.returnParam != undefined ) {
+				var button_id = json.result.returnParam;
+			} else {
+				var button_id = _Option.buttonKey;
+			}
+
+			// 이전 버전 호환성 유지
+			var rPromotionData = new Array();
+			if ( json.result.purchaseMsgList ) {
+				rPromotionData = json.result.purchaseMsgList;
+			} else {
+				rPromotionData.push(json.result.purchaseMsg);
+			}
+			
+			// rolling
+			if ( rPromotionData.length > 1) {
+				var rolling = new RollingDiv();
+				rolling.initialize();
+				rolling.start();
+			} else {
+				displayPromotionHTML(rPromotionData[0]);
+			}
+		},
+		
+		
+		/**
+		 * buton display 
+		 */
+		displayHtml : function( resultHtml, elementId ) {
+
+			var objButtonEle = document.getElementById(elementId);
+			
+			if ( elementId != null && objButtonEle != undefined) {
+				var eleEmbededDiv = document.getElementById(elementId);
+				eleEmbededDiv.innerHTML = resultHtml;
+			} else {
+				document.write(eleBtnImg);
+			}
+		},
+
+		/**
+		 * 구매하기 버튼 display
+		 */
+		displayButtonCheckout : function( params ) {
+			var btnImgHtml = '<span class="payco_section"><em class="payco_section_tit">페이코 ID로 사는게 니나노</em><a href="javascript:;" class="payco_checkout_btn" id="payco_btn_'+_Option.buttonKey+'"><span class="payco_btn_txt">PAYCO 바로구매</span></a></span>';
+			var promotionHtml = '<span class="payco_section_wrap" id="div_pco_evnt_'+_Option.buttonKey+'"></span>';
+			var prevNextBtnHtml = '<span class="payco_btn_wrap" id="preNextBtn_'+_Option.buttonKey+'"><a href="javascript:;" id="prev_btn_'+_Option.buttonKey+'" class="payco_btn_prev">이전 항목</a><a href="javascript:;" id="next_btn_'+_Option.buttonKey+'" class="payco_btn_next">다음 항목</a></span>';
+
+			var resultHtml = '<span class="payco_checkout t'+_Option.buttonClass.toLowerCase()+' '+_Option.buttonKey.toLowerCase()+'">'+btnImgHtml+promotionHtml+prevNextBtnHtml+'</span>'	
+			
+			// button dislpay
+			this.displayHtml(resultHtml, _Option.buttonElementId );
+
+			// button click Event
+			_EventHandler.addClickEventHandler(document.getElementById('payco_btn_'+ _Option.buttonKey), params["BUTTON_HANDLER"],params["BUTTON_HANDLER_ARG"]);
+		},
+		
+		/**
+		 * 간편결제 버튼 display
+		 */
+		displayButtonEasyPay : function( btnImgHtml ) {
+			var defaultImgUrl = _Option.imgPath + '/v2/btn_type/' + _Option.buttonKey+'.png';
+			
+			var resultHtml = btnImgHtml;
+			if ( !btnImgHtml ) {
+				resultHtml = '<img src="'+defaultImgUrl+'" width="103" height="14" style="width:auto;vertical-align:middle"/>';				
+			}
+			
+			this.displayHtml(resultHtml, _Option.buttonElementId);
+		}
+	};
+
+	
+	/**
+	 * event handler
+	 */
+	var _EventHandler = {
+		 addClickEventHandler : function( element, handler, argument ) {
+			 argument = argument || [];
+			if (element && typeof handler == "function") {
+				element.onclick = function() {
+					handler.apply(this, argument);
+				}
+			}
+		},
+
+		addPromotionEvent : function( eventUrl, popupOption, button_id, rollFunc ) {
+			var elePromotinLayer = document.getElementById('pco_ev_link_'+ button_id);
+			if ( !elePromotinLayer ) {
+				return;
+			}
+			
+			
+			if ( elePromotinLayer.onclick ) {
+				elePromotinLayer.onclick = null;
+				elePromotinLayer.onmouseover = null;
+				elePromotinLayer.onmouseout = null;
+			}
+			
+			elePromotinLayer.onclick = function() {
+				if ( eventUrl != "" ) {
+					if ( !popupOption ) {
+						popupOption = 'top=100, left=300, width=1024px, height=1000px, resizable=yes, scrollbars=yes';
+					}
+					window.open(eventUrl, 'popupEventPayco', popupOption);	
+				}
+			}
+			
+			var eleTooltip = document.getElementById('payco_tooltip_'+ button_id);
+			elePromotinLayer.onmouseover = function() {
+				eleTooltip.style.display = "inline-block";
+				if ( rollFunc ) rollFunc.stop();
+			}
+			
+			elePromotinLayer.onmouseout = function() {
+				eleTooltip.style.display = "none";
+				if ( rollFunc ) rollFunc.start();
+			}		
+		}
+	};
+	
+
+	//== public
+	var applyModule = function( params ) {
+		_Initialize(params);
+		_Utility.loadCss(_Option.buttonCssUrl);
+		
+		if ( _Option.orderMethod == 'CHECKOUT') { 
+			_SetOption.checkoutButton();
+			_UI.displayButtonCheckout(params);	
+			_UI.loadPromotionJsonp();
+			
+		} else if ( _Option.orderMethod == 'EASYPAY') { 
+			
+			// A2 타입은 기존 이미지로 고정 
+			if ( _Option.buttonType == 'A2') {
+				_UI.displayButtonEasyPay();
+			} else { 
+				_SetOption.easyPayButton(params);
+				_UI.loadPromotionJsonp();
+			}
+			
+		} else if (typeof console != "undefined") {
+			console.log("올바른 속성값을 입력하여 주세요.(ORDER_METHOD)");
+		}
+	};
+
+	
+	var applyPromotionCheckout = function(json) {
+		_UI.displayPromotionCheckout(json);
+	};
+	
+	var applyEasyPay = function(json) {
+		_UI.displayEasyPay(json);
+	};
+	
+	return {
+		register : applyModule ,
+		displayPromotionCheckout : applyPromotionCheckout,
+		displayEasyPay : applyEasyPay
+	};
+	
+})();
+

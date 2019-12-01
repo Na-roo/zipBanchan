@@ -1,0 +1,3 @@
+﻿/* ADLC TOAST DMP */
+
+var _TOAST=(function(tp,u){var si=new Image(0,0),dv='ACEUCI'+tp+'=1',dc=document,lpt=((location.protocol=='https:')?'https:':'http:');if(String(document.cookie).indexOf('ACEUCI'+tp+'=')==-1){si.src=lpt+'//adlc-exchange.toast.com/sendid?sid=acecounter&uid='+u+'&rnd='+Math.random();};dc.cookie=dv+';';return si;})('','1565176210723144424');

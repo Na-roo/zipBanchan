@@ -1,0 +1,167 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!-- saved from url=(0072)http://www.zipbanchan.co.kr/shop/goods/goods_review_list.php?goodsno=578 -->
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ko" lang="ko"><head><meta http-equiv="Content-Type" content="text/html; charset=EUC-KR">
+<script type="text/javascript" src="./jquery-1.10.2.min.js.다운로드"></script>
+<script src="./common.js.다운로드"></script>
+<link rel="styleSheet" href="./style(1).css">
+<script language="javascript">
+
+function popup_register( mode, goodsno, sno )
+{
+// 회원전용 & 로그인전
+	if ( mode == 'del_review' ) var win = window.open("goods_review_del.php?mode=" + mode + "&sno=" + sno,"qna_register","width=400,height=200");
+	else var win = window.open("goods_review_register.php?mode=" + mode + "&goodsno=" + goodsno + "&sno=" + sno,"qna_register","width=600,height=550");
+	win.focus();
+}
+
+var preContent;
+var IntervarId;
+
+function view_content(obj, e)
+{
+	var cobj = obj;
+	var tagName = e.srcElement ? e.srcElement.tagName : e.target.tagName;
+
+	if ( document.getElementById && ( tagName == 'A' || tagName == 'IMG' ) ) return;
+	else if ( !document.getElementById && ( tagName == 'A' || tagName == 'IMG' ) ) return;
+
+	var div = obj.parentNode;
+
+	for (var i=1, m=div.childNodes.length;i<m;i++) {
+		if (div.childNodes[i].nodeType != 1) continue;	// text node.
+		else if (obj == div.childNodes[ i ]) continue;
+
+		obj = div.childNodes[ i ];
+		break;
+	}
+
+	if (preContent && obj!=preContent){
+		obj.style.display = "block";
+		preContent.style.display = "none";
+		
+	}
+	else if (preContent && obj==preContent) preContent.style.display = ( preContent.style.display == "none" ? "block" : "none" );
+	else if (preContent == null ) obj.style.display = "block";
+
+	if(obj!=preContent){
+		var sno = $(cobj).attr("data-sno");
+		$.ajax({
+            type: "POST",
+            url: "/shop/goods/ajax_goods_review_log.php",
+            data: "cate=hit&sno="+sno,
+            dataType: "json",
+            timeout: 10000,
+            success: function ( result ) {
+            	   
+            }
+        });
+	}
+
+	preContent = obj;
+	IntervarId = setInterval( 'resizeFrame()', 100 );
+	
+	
+}
+function resizeFrame()
+{
+    var oBody = document.body;
+    var tb_contents = document.getElementById("contents-wrapper");
+    var i_height = tb_contents.offsetHeight;
+    if(i_height==0){
+    	i_height  = 100;
+    }
+
+    parent.resizeFrameHeight('inreview',i_height);
+    if ( IntervarId ) clearInterval( IntervarId );
+
+	var i_width = tb_contents.offsetWidth;
+    if(i_width==0){
+    	i_width  = 100;
+    }
+    parent.resizeFrameWidth('inreview',i_width);
+    if ( IntervarId ) clearInterval( IntervarId );
+}
+
+function add_recommend(sno){
+	$.ajax({
+        type: "POST",
+        url: "/shop/goods/ajax_goods_review_log.php",
+        data: "cate=recommend&sno="+sno,
+        dataType: "json",
+        timeout: 10000,
+        success: function ( result ) {
+        	if(result == "ok"){
+	        	alert("이용후기의 추천이 완료되었습니다.");
+        	}else if(result == "is"){
+	        	alert("이미 추천하신 이용후기 입니다.");
+        	}
+        }
+    });
+}
+</script>
+</head>
+<body style="margin-top: 10px;" onload="resizeFrame()" marginwidth="0" marginheight="0">
+
+<div id="contents-wrapper">
+<table border="0" cellpadding="0" cellspacing="0" class="listtable">
+	<tbody><tr>
+		<th width="50">번호</th>
+		<th width="590">제목</th>
+		<th width="100">작성자</th>
+		<th width="100">작성일</th>
+		<th width="100">평점</th>
+	</tr>
+</tbody></table>
+<div>
+	<table class="listcon" width="100%" cellpadding="0" cellspacing="0" style="border-bottom:1px solid #ccc; cursor:pointer; font-size:13px; color:#777;" data-sno="132724" onclick="view_content(this,event)">
+<tbody><tr onmouseover="this.style.background=&quot;#F7F7F7&quot;" onmouseout="this.style.background=&quot;&quot;">
+	<td width="50" align="center">2</td>
+	<td width="590"><div style="background: url(/shop/data/skin/mera_ws/img/common/icon_review.gif) no-repeat 7px 50%; line-height:40px;">맛있어요 맛있어요 맛있어요 </div></td>
+	<td width="100" align="center">김O애</td>
+	<td width="100" align="center">2019-08-06</td>
+	<td width="100" align="center" style="color:#7b3e2f;">
+★★★★★	</td>
+</tr>
+</tbody></table>
+	<div style="display:none;padding:10px;border-bottom:1px solid #ccc; color:#777; font-size:13px; position:relative;">
+	<div width="100%" style="padding-left:17px;">
+	맛있어요 맛있어요 
+	</div>
+	<div style="text-align:right;">
+	<a href="javascript:;" onclick="popup_register( &#39;reply_review&#39;, &#39;578&#39;, &#39;132724&#39; );"><img src="./btn_reply.gif" border="0" align="absmiddle"></a>
+</div>
+</div>
+<div>
+	<table class="listcon" width="100%" cellpadding="0" cellspacing="0" style="border-bottom:1px solid #ccc; cursor:pointer; font-size:13px; color:#777;" data-sno="132840" onclick="view_content(this,event)">
+<tbody><tr onmouseover="this.style.background=&quot;#F7F7F7&quot;" onmouseout="this.style.background=&quot;&quot;">
+	<td width="50" align="center">1</td>
+	<td width="590"><div style="background: url(/shop/data/skin/mera_ws/img/common/ico_a.gif) no-repeat 3px 50%; padding-left:27px; line-height:40px;"> 답변드립니다. </div></td>
+	<td width="100" align="center"><img src="./admin.gif" border="0"></td>
+	<td width="100" align="center">2019-08-06</td>
+	<td width="100" align="center" style="color:#7b3e2f;">
+	</td>
+</tr>
+</tbody></table>
+	<div style="display:none;padding:10px;border-bottom:1px solid #ccc; color:#777; font-size:13px; position:relative;">
+	<div width="100%" style="padding-left:17px;">
+	안녕하세요 고객님, 집반찬연구소입니다.<br>
+정성으로 준비한 집반찬연구소의 제품을 이용해 주셔서 감사합니다.<br>
+앞으로도, 믿고 드실 수 있는 안전하고 건강한 제품을 제공해드리는 집반찬연구소가 되도록 노력하겠습니다.<br>
+<br>
+작성해주신 후기에 대한 적립금은 [마이페이지] - [적립금 내역] 에서 확인 가능합니다.<br>
+감사합니다.<br>
+
+	</div>
+	<div style="text-align:right;">
+</div>
+</div>
+
+<div style="float:right;padding:10px 5px">
+	<a href="javascript:;" onclick="popup_register( &#39;add_review&#39;, &#39;578&#39; )"><img src="./btn_writes.gif"></a>
+	<a href="http://www.zipbanchan.co.kr/shop/goods/goods_review.php?&amp;" target="_parent"><img src="./btn_lists.gif"></a>
+</div>
+
+	<div style="clear:both;text-align:center;padding-bottom:15px; font-size:12px;"> <b>1</b> </div>
+</div>
+
+</div></div></body></html>

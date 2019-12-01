@@ -1,0 +1,10 @@
+<%@page import="com.itwill.member.Member"%>
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+    pageEncoding="UTF-8"%>
+<%
+	Member member = (Member)session.getAttribute("sMember");
+	if(member==null){
+		response.sendRedirect("memberLoginForm.jsp");
+		return;
+	}
+%>
